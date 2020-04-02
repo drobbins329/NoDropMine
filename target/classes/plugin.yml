@@ -1,0 +1,12 @@
+name: NoDropMine
+version: 1.0-SNAPSHOT
+main: me.keylami.nodropmine.NoDropMine
+api-version: 1.13
+authors: [KeylAmi]
+description: Drops from block breaks go to chest
+commands:
+  nodropmine:
+    description: View information on this plugin.
+    default: true
+    aliases: [ndm]
+    usage: /ndm
