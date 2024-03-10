@@ -1,7 +1,8 @@
 name: NoDropMine
 version: ${project.version}
 main: me.keylami.nodropmine.NoDropMine
-api-version: 1.13
+api-version: 1.17
+depend: [WorldGuard]
 authors: [KeylAmi]
 description: Drops from block breaks go to chest
 commands:

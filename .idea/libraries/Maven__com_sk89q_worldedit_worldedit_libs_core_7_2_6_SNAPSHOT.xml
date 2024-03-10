@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.sk89q.worldedit.worldedit-libs:core:7.2.6-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/sk89q/worldedit/worldedit-libs/core/7.2.6-SNAPSHOT/core-7.2.6-20210630.191652-21.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/com/sk89q/worldedit/worldedit-libs/core/7.2.6-SNAPSHOT/core-7.2.6-20210630.191652-21-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/sk89q/worldedit/worldedit-libs/core/7.2.6-SNAPSHOT/core-7.2.6-20210630.191652-21-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

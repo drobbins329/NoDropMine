@@ -14,11 +14,11 @@ public class Methods {
     private static final Map<String, Location> serializeCache = new HashMap<>();
 
     public static boolean isSync(Player p) {
-        if (p.getItemInHand().hasItemMeta()
-                && p.getItemInHand().getType() != Material.AIR
-                && p.getItemInHand().getType() != Material.ENCHANTED_BOOK
-                && p.getItemInHand().getItemMeta().hasLore()) {
-            for (String str : p.getItemInHand().getItemMeta().getLore()) {
+        if (p.getInventory().getItemInMainHand().hasItemMeta()
+                && p.getInventory().getItemInMainHand().getType() != Material.AIR
+                && p.getInventory().getItemInMainHand().getType() != Material.ENCHANTED_BOOK
+                && p.getInventory().getItemInMainHand().getItemMeta().hasLore()) {
+            for (String str : p.getInventory().getItemInMainHand().getItemMeta().getLore()) {
                 if (str.contains(Methods.formatText("&7Sync_Touch2")) || str.contains(Methods.formatText("&aSync_Touch2"))) {
                     return true;
                 }
@@ -33,6 +33,7 @@ public class Methods {
         if (serializeCache.containsKey(str)) {
             return serializeCache.get(str).clone();
         }
+
         String cacheKey = str;
         str = str.replace("y:", ":").replace("z:", ":").replace("w:", "").replace("x:", ":").replace("/", ".");
         List<String> args = Arrays.asList(str.split("\\s*:\\s*"));
@@ -49,7 +50,8 @@ public class Methods {
             return "";
         StringBuilder hidden = new StringBuilder();
         for (char c : s.toCharArray()) hidden.append(ChatColor.COLOR_CHAR + "").append(c);
-        return hidden.toString();
+        // return hidden.toString();
+        return s;
     }
 
     public static String serializeLocation(Location location) {

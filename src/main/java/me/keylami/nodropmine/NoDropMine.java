@@ -1,5 +1,13 @@
 package me.keylami.nodropmine;
 
+import com.sk89q.commandbook.util.ItemUtil;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldguard.LocalPlayer;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.flags.Flags;
+import com.sk89q.worldguard.protection.regions.RegionContainer;
+import com.sk89q.worldguard.protection.regions.RegionQuery;
 import me.keylami.nodropmine.modules.*;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -15,7 +23,9 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -33,6 +43,8 @@ public final class NoDropMine extends JavaPlugin implements Listener {
     private static NoDropMine INSTANCE;
     public Enchantment enchantmentHandler;
     private CommandManager commandManager;
+    private PluginManager pm;
+    private WorldGuardPlugin wGuard;
 
     public static NoDropMine getInstance() {
         return INSTANCE;
@@ -56,15 +68,26 @@ public final class NoDropMine extends JavaPlugin implements Listener {
                 );
         PluginManager pluginManager = Bukkit.getPluginManager();
         pluginManager.registerEvents(new InventoryListeners(this), this);
+        pm = Bukkit.getServer().getPluginManager();
+        pm.registerEvents(this, this);
+        Plugin plugin = pm.getPlugin("WorldGuard");
+        wGuard = (WorldGuardPlugin) plugin;
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent blockBreak){
         //getServer().broadcastMessage("Block broken");
-
+        Player player = blockBreak.getPlayer();
+        World world = player.getWorld();
+        com.sk89q.worldedit.world.World world2 = BukkitAdapter.adapt(world);
         Location location = null;
         if (!Methods.isSync(blockBreak.getPlayer())) return;
 
+        LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
+        Location blockLocation = blockBreak.getBlock().getLocation();
+        com.sk89q.worldedit.util.Location loc = BukkitAdapter.adapt(blockLocation);
+        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+        RegionQuery query = container.createQuery();
 
         ItemStack tool = blockBreak.getPlayer().getInventory().getItemInHand();
         ItemMeta meta = tool.getItemMeta();
@@ -76,16 +99,21 @@ public final class NoDropMine extends JavaPlugin implements Listener {
             break;
         }
 
-        if (location == null
-                || location.getBlock().getType() != Material.CHEST
+        if ((location == null)
+                || (location.getBlock().getType() != Material.CHEST)
                 //|| blockBreak.getBlock().getType().name().contains("SHULKER")
-                || blockBreak.getPlayer().getGameMode() == GameMode.CREATIVE
-                || blockBreak.getBlock().getType() == Material.SPAWNER) {
+                || (blockBreak.getPlayer().getGameMode() == GameMode.CREATIVE)
+                || (blockBreak.getBlock().getType() == Material.SPAWNER)
+                || (!query.testState(loc, localPlayer, Flags.BUILD)))
+
+        {
             return;
         }
 
+        if(!query.testState(loc, localPlayer, Flags.BUILD)){return;}
+
         this.random = new Random();
-        Player player = blockBreak.getPlayer();
+
         Block block = blockBreak.getBlock();
         chestLoc = location;
         Chest chest = (Chest) chestLoc.getBlock().getState();
@@ -157,10 +185,26 @@ public final class NoDropMine extends JavaPlugin implements Listener {
             }
         }
         blockBreak.setDropItems(false);
-        blockBreak.getPlayer().getItemInHand().setDurability((short) (blockBreak.getPlayer().getItemInHand().getDurability() + 1));
-        if (blockBreak.getPlayer().getItemInHand().getDurability() >= blockBreak.getPlayer().getItemInHand().getType().getMaxDurability()) {
-            blockBreak.getPlayer().getItemInHand().setType(null);
+        // blockBreak.getPlayer().getItemInHand().setDurability((short) (blockBreak.getPlayer().getItemInHand().getDurability() + 1));
+        org.bukkit.inventory.meta.Damageable item = (Damageable) blockBreak.getPlayer().getInventory().getItemInMainHand().getItemMeta(); // new line
+        ItemMeta metas = blockBreak.getPlayer().getInventory().getItemInMainHand().getItemMeta();
+        if(metas.getEnchants().containsKey(org.bukkit.enchantments.Enchantment.DURABILITY))
+        {
+            double enchlevel = metas.getEnchantLevel(org.bukkit.enchantments.Enchantment.DURABILITY);
+            Random rndm = new Random();
+            if(rndm.nextDouble() < (100.0 / (enchlevel + 1.0)) * .01)
+            {item.setDamage(item.getDamage() + 1);}
         }
+        else{item.setDamage(item.getDamage() + 1);}
+        ItemStack stk = blockBreak.getPlayer().getInventory().getItemInMainHand();
+        ((Damageable) metas).setDamage(item.getDamage());
+        stk.setItemMeta(metas);
+        // blockBreak.getPlayer().getInventory().getItemInMainHand().setItemMeta(metas.);
+        // if (blockBreak.getPlayer().getItemInHand().getDurability() >= blockBreak.getPlayer().getItemInHand().getType().getMaxDurability()) {
+        //     blockBreak.getPlayer().getItemInHand().setType(null);
+        // }
+        Material handItem = blockBreak.getPlayer().getInventory().getItemInMainHand().getType(); // new line
+        if(item.getDamage() >= handItem.getMaxDurability()){blockBreak.getPlayer().getInventory().getItemInMainHand().setType(null);} // new line
         if (blockBreak.getExpToDrop() > 0)
             blockBreak.getPlayer().getWorld().spawn(blockBreak.getBlock().getLocation(), ExperienceOrb.class).setExperience(blockBreak.getExpToDrop());
         blockBreak.getBlock().setType(Material.AIR);
@@ -195,6 +239,7 @@ public final class NoDropMine extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
+
         if (event.getAction() != Action.LEFT_CLICK_BLOCK
                 || event.getClickedBlock() == null
                 || player.isSneaking()
@@ -204,7 +249,7 @@ public final class NoDropMine extends JavaPlugin implements Listener {
         }
 
         if (event.getClickedBlock().getType() == Material.CHEST && Methods.isSync(player)) {
-            ItemStack item = event.getPlayer().getInventory().getItemInHand();
+            ItemStack item = event.getPlayer().getInventory().getItemInMainHand();
             boolean isLinked = false;
 
             for (String lore : item.getItemMeta().getLore()) {
